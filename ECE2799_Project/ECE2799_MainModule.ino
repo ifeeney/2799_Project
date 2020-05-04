@@ -1,26 +1,28 @@
 //ECE 2799 Team 6
 //Main Module Code
 
-#include <Wire.h> 
+#include <Wire.h>
 int PIR = 3;              // the pin that the PIR is attached to
 int pingPin = 2;          // the pin that the ultrasonic sensor is attached to
-int speakerPin = 4;       // the pin that the speaker is attached to 
+int speakerPin = 4;       // the pin that the speaker is attached to
 bool firstRun = true;
+float prevDist;
+float avgDist;
 
 void setup() {
  pinMode(PIR, INPUT);         // initialize sensor as an input
  pinMode(speakerPin, OUTPUT); // initalize speaker as an output
  Serial.begin(9600);          // initialize serial
- Wire.begin();                // initalize i2c communication 
+ Wire.begin();                // initalize i2c communication
 }
 
 
 void loop(){
-  
-  //Process Ultrasonic Sensor 
+ 
+  //Process Ultrasonic Sensor
   float duration, inches;
   float distSum = 0;
-  
+ 
   //Take 5 samples
   int samples = 0;
   while(samples<5){
@@ -36,53 +38,54 @@ void loop(){
      // Read in signal from PING pin
       pinMode(pingPin, INPUT);
       duration = pulseIn(pingPin, HIGH);
-    
+   
       // convert the time into a distance using conversions found on datasheet
-      inches = (duration/1000000) * 890;
-    
+      inches = (duration/1000000) * 890 * 12;
+   
       //Check if measurements are in bounds
-      if((inches < 2) && (inches > 100)){
+      if((inches > 2) && (inches < 100)){
         samples ++;
-        distSum += inches; 
+        distSum += inches;
       }
-      
+     
   }
 
+  avgDist = distSum/5;
+  Serial.print("avgDist: ");
+  Serial.println(avgDist);
+
   if(firstRun){
-    float prevDist = avgDist;
+    prevDist = avgDist;
     firstRun = false;
   }
 
-  float avgDist = distSum/5;
-
-  //If this distance is closer than previous, send alert 
-  if(avgDist < prevDist){
-    
+  Serial.print("prevDist: ");
+  Serial.println(prevDist);
+  //If this distance is closer than previous, send alert
+  if(avgDist < (prevDist-1)){
+   
          //Process PIR Input
          if (digitalRead(PIR) == HIGH) { // check if the sensor is HIGH
-           Serial.println("Motion detected!"); 
-           
+           Serial.println("Motion detected!");
+           delay(1000);
            //Write to the controller at address 1
-           Wire.beginTransmission(1);                          
-           Wire.write(1);                       
-           Wire.endTransmission();   
-         } 
+           //Wire.beginTransmission(1);                          
+          // Wire.write(1);                      
+          // Wire.endTransmission();  
+         }
          
          else {
            Serial.println("Motion stopped!");
          }
   }
 
-  prevDist = avgDist; 
+  prevDist = avgDist;
 
   //Read in controller
-  wire.requestFrom(contorller, 1);
-  byte panicStatus = wire.read();
-  if(PanicStatus == 1){
-    tone(SpeakerPin, 3000);           // 3kHz buzzing (about 80dB @10cm)
-  }
+  //wire.requestFrom(contorller, 1);
+  //byte panicStatus = wire.read();
+  //if(PanicStatus == 1){
+  //  tone(SpeakerPin, 3000);           // 3kHz buzzing (about 80dB @10cm)
+  //}
 
 }
-
-
-
