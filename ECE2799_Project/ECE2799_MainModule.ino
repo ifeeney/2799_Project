@@ -61,19 +61,19 @@ void loop(){
 
   Serial.print("prevDist: ");
   Serial.println(prevDist);
-  //If this distance is closer than previous, send alert
+  
+  //If this distance is 1 inch closer than previous or more, send alert
   if(avgDist < (prevDist-1)){
    
          //Process PIR Input
          if (digitalRead(PIR) == HIGH) { // check if the sensor is HIGH
            Serial.println("Motion detected!");
-           delay(1000);
+           delay(1000); //Delay primarily for debugging and readability purposes
            //Write to the controller at address 1
-           //Wire.beginTransmission(1);                          
-          // Wire.write(1);                      
-          // Wire.endTransmission();  
-         }
-         
+           Wire.beginTransmission(1);                          
+           Wire.write(1);                      
+           Wire.endTransmission();  
+         }       
          else {
            Serial.println("Motion stopped!");
          }
@@ -82,10 +82,12 @@ void loop(){
   prevDist = avgDist;
 
   //Read in controller
-  //wire.requestFrom(contorller, 1);
-  //byte panicStatus = wire.read();
-  //if(PanicStatus == 1){
-  //  tone(SpeakerPin, 3000);           // 3kHz buzzing (about 80dB @10cm)
-  //}
+  wire.requestFrom(contorller, 1);
+  byte panicStatus = wire.read();
+  if(panicStatus == 1){
+    tone(speakerPin, 3000);           // 3kHz buzzing (about 80dB @10cm)
+  }else{
+    noTone(speakerPin);
+  }
 
 }
