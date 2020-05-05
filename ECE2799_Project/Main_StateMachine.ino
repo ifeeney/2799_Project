@@ -58,12 +58,12 @@ void loop() {
         Wire.requestFrom(1, 1);
         panicStatus = Wire.read();
         if (panicStatus == 1) {
-          tone(speakerPin, 3000);           // 3kHz buzzing (about 80dB @10cm)
           state = ALERT;
         }
         break; 
 
       case ALERT:
+        tone(speakerPin, 3000);           // 3kHz buzzing (about 80dB @10cm)
         while (panicStatus == 1) {
           Wire.requestFrom(1, 1);
           panicStatus = Wire.read();
