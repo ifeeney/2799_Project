@@ -6,10 +6,12 @@ int PIR = 3;              // the pin that the PIR is attached to
 int pingPin = 2;          // the pin that the ultrasonic sensor is attached to
 int speakerPin = 4;       // the pin that the speaker is attached to
 bool firstRun = true;
+byte panicStatus;
 float prevDist;
 float avgDist;
 enum State_enum {SENSE, ALERT};
 int state = 0;           //IDK what data type this should be
+float takeSamples();
 
 void setup() {
   pinMode(PIR, INPUT);         // initialize sensor as an input
@@ -20,12 +22,10 @@ void setup() {
 
 
 void loop() {
-  byte panicStatus;
   
   switch (state)
   {
     case SENSE:
-      if (sensors == NONE) {
         avgDist = takeSamples();
         Serial.print("avgDist: ");
         Serial.println(avgDist);
@@ -55,8 +55,8 @@ void loop() {
         prevDist = avgDist;
 
         //Read in controller
-        wire.requestFrom(contorller, 1);
-        byte panicStatus = wire.read();
+        Wire.requestFrom(1, 1);
+        panicStatus = Wire.read();
         if (panicStatus == 1) {
           tone(speakerPin, 3000);           // 3kHz buzzing (about 80dB @10cm)
           state = ALERT;
@@ -65,16 +65,15 @@ void loop() {
 
       case ALERT:
         while (panicStatus == 1) {
-          wire.requestFrom(contorller, 1);
-          panicStatus = wire.read();
+          Wire.requestFrom(1, 1);
+          panicStatus = Wire.read();
         }
         noTone(speakerPin);
         state = SENSE;
+        break;
       }
-      break;
   }
 
-}
 
 
 float takeSamples() {
