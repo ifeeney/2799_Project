@@ -2,14 +2,16 @@
 //Main Module Code
 
 #include<Wire.h>                          //Library for I2C Communication functions
-#define MotorPin 4
-const int buttonPin = 12;     // the number of the pushbutton pin
-int buttonState = 0;    
-int panicAlarm = 0; 
+#define buttonPin 2
+#define motorPin 4      
+int lastButtonState = LOW;
+unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
+unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
+int motorON;
 
 void setup() {
   // put your setup code here, to run once:
- pinMode(MotorPin, OUTPUT);
+  pinMode(MotorPin, OUTPUT);
   pinMode(buttonPin, INPUT);
   Serial.begin(9600); 
   Wire.begin(1);                          //Begins I2C communication with Slave Address as 8 at pin (A4,A5)
@@ -20,24 +22,51 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+int reading = digitalRead(buttonPin);
 
-    buttonState = digitalRead(buttonPin); //MAYBE USE INTERRUPT? NOT SURE HOW TIMING WILL WORK OUT
+  // If the switch changed, due to noise or pressing:
+  if (reading != lastButtonState) {
+    // reset the debouncing timer
+    lastDebounceTime = millis();
+  }
 
-  if(panicAlarm == 1){
-    digitalWrite(MotorPin, HIGH);   // turn on vibrating motor
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    // whatever the reading is at, it's been there for longer than the debounce
+    // delay, so take it as the actual current state:
+
+    // if the button state has changed:
+    if (reading != buttonState) {
+      buttonState = reading;
+    }
+
+    if (buttonState == 1) {
+      if (motorON) {
+        digitalWrite(motorPin, LOW);
+      }
+    }
   }
-  else{
-    digitalWrite(MotorPin, LOW);    // turn off vibrating motor
-  }
+  lastButtonState = reading;
         
 }
 
 void receiveEvent (int howMany)                    //This Function is called when Slave receives value from master
 {
-   panicAlarm = Wire.read();                    //Used to read value received from master and store in variable SlaveReceived
+    byte alarm = Wire.read();                      //Used to read value received from master and store in variable alarm
+    if (alarm) {
+      digitalWrite(motorPin, HIGH);
+      motorON = 1;
+      Serial.println("Motor ON");  
+    }
 }
 
 void requestEvent()                                //This Function is called when Master wants value from slave
 {
-  Wire.write(buttonState);                          // sends one byte converted POT value to master
+  Wire.write(lastButtonState);                          // sends one byte converted POT value to master
 }
+
+
+
+
+
+
+
